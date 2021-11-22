@@ -1,0 +1,4 @@
+目标
+1. 复刻MonoGame中的平台跳跃游戏
+2. 改进碰撞机制
+3. AssetManager利用上。
