@@ -1,6 +1,8 @@
 package org.propig.game.platformer;
 
 import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 
@@ -13,10 +15,13 @@ public class Gem extends BaseActor{
     public Gem(float x, float y, Stage s) {
         super(x, y, s);
 
-        //setColor(Color.YELLOW);
         actorType = ActorType.Gem;
-        loadAnimationFromAssetManager("Sprites/Gem.png",1,1,0, false);
+        loadAnimationFromAssetManager("Sprites/Gem.png",1,1,0, false, true);
+        Texture texture = getAssetManager().get("Sprites/Gem.png", Texture.class);
+        int deltax = (Tile.width - texture.getWidth())/2;
+        setX(x + deltax);
 
+        setColor(Color.YELLOW);
         collectedSound = getAssetManager().get("Sounds/GemCollected.wav", Sound.class);
     }
 

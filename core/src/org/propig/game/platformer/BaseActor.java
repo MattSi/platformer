@@ -41,21 +41,14 @@ public class BaseActor extends Group
     private float maxSpeed;
     private float deceleration;
 
-    private Polygon boundaryPolygon;
+    public Polygon boundaryPolygon;
 
     // stores size of game world for all actors
     private static Rectangle worldBounds;
 
 
     protected ActorType actorType;
-    public static int TileWidth;
-    public static int TileHeight;
-
-    public static void setTileWidthHeight(int tileWidth, int tileHeight){
-        TileWidth = tileWidth;
-        TileHeight = tileHeight;
-    }
-
+    public static Tile[][] tiles;
 
 
     public BaseActor(float x, float y, Stage s)
@@ -218,7 +211,8 @@ public class BaseActor extends Group
         return anim;
     }
 
-    public Animation<TextureRegion> loadAnimationFromAssetManager(String fileName, int rows, int cols, float frameDuration, boolean loop){
+    public Animation<TextureRegion> loadAnimationFromAssetManager(String fileName, int rows, int cols, float frameDuration,
+                                                                  boolean loop, boolean setAnimate){
         Texture texture = getAssetManager().get(fileName, Texture.class);
         texture.setFilter(TextureFilter.Linear, TextureFilter.Linear);
         int frameWidth = texture.getWidth() / cols;
@@ -239,7 +233,7 @@ public class BaseActor extends Group
         else
             anim.setPlayMode(PlayMode.NORMAL);
 
-        if (animation == null)
+        if (animation == null && setAnimate)
             setAnimation(anim);
 
         setOriginX(frameWidth/2.0f);
@@ -633,7 +627,7 @@ public class BaseActor extends Group
      */
     public static ArrayList<BaseActor> getList(Stage stage, String className)
     {
-        ArrayList<BaseActor> list = new ArrayList<BaseActor>();
+        ArrayList<BaseActor> list = new ArrayList<>();
 
         Class theClass = null;
         try
@@ -645,6 +639,18 @@ public class BaseActor extends Group
         {
             if ( theClass.isInstance( a ) )
                 list.add( (BaseActor)a );
+        }
+
+        return list;
+    }
+
+    public static ArrayList<BaseActor> getList(Stage stage, ActorType actorType){
+        ArrayList<BaseActor> list = new ArrayList<>();
+
+        for(Actor item : stage.getActors()){
+            if(((BaseActor)item).actorType == actorType){
+                list.add((BaseActor) item);
+            }
         }
 
         return list;
@@ -705,6 +711,8 @@ public class BaseActor extends Group
     public ActorType getActorType() {
         return actorType;
     }
+
+
 
     public void setActorType(ActorType actorType) {
         this.actorType = actorType;

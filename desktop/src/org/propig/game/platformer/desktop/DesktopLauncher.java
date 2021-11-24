@@ -2,7 +2,6 @@ package org.propig.game.platformer.desktop;
 
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
-import org.propig.game.platformer.Platformer;
 import org.propig.game.platformer.PlatformerGame;
 
 public class DesktopLauncher {

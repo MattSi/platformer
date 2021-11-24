@@ -1,21 +1,134 @@
 package org.propig.game.platformer;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.utils.Array;
+
+import java.util.List;
 
 public class Enemy extends BaseActor {
+    private Animation<TextureRegion> runAnimation;
+    private Animation<TextureRegion> idleAnimation;
+    private Animation<TextureRegion> animation;
+    public FaceDirection direction = FaceDirection.Left;
+    private static final float maxWaitTime = 0.5f;
+    private static final float moveSpeed = 64.0f;
+    private Rectangle localBounds;
+    private float waitTime;
+    private BaseActor belowSensor;
+
+    public Rectangle getBoundingRectagle(){
+
+        int left = (int) (MathUtils.round(getX() - getOriginX()) + localBounds.x);
+        int bottom =  (int) (MathUtils.round(getY() - getOriginY()));
+
+        return new Rectangle(left, bottom, localBounds.width, localBounds.height);
+    }
+
+    public Enemy(float x, float y, String spriteSet, Stage s) {
+        super(x, y, s);
+        actorType = ActorType.Enemy;
+        waitTime=0f;
+        loadContext(spriteSet);
+
+
+        animation=runAnimation;
+        belowSensor = new Background(0,0, s, -1);
+        belowSensor.loadTexture("Sprites/White.png");
+        belowSensor.setSize(getWidth()-8, 20);
+        belowSensor.setBoundaryRectangle();
+        belowSensor.setVisible(false);
+
+
+        setAnimation(runAnimation);
+    }
+
+    @Override
+    public void act(float dt) {
+        super.act(dt);
+        Vector2 lantern;
+
+        if(waitTime > 0){
+            waitTime = Math.max(0.0f, waitTime-dt);
+        } else {
+            if(direction == FaceDirection.Left){
+                lantern = new Vector2(getX() + localBounds.width * 0.8f, getY() - Tile.height/2);
+            } else {
+                lantern = new Vector2(getX() + getWidth() - localBounds.width * 0.8f, getY() - Tile.height/2);
+            }
+
+            if(onSolid(lantern)){
+                float speed = direction.value * moveSpeed * dt;
+                setX(getX() + speed);
+                belowSensor.setPosition(getX()+localBounds.x+4, getY() - 10 );
+                belowSensor.setColor(Color.GREEN);
+                setAnimation(runAnimation);
+            } else {
+                direction = FaceDirection.getDirection(direction.value * -1);
+                setScaleX(direction.value * -1);
+                waitTime = maxWaitTime;
+                setAnimation(idleAnimation);
+            }
+        }
+
+    }
+
+    public boolean onSolid(Vector2 lantern){
+        Rectangle r = new Rectangle(0,0,0,0);
+
+        List<BaseActor> actorList = getList(getStage(), ActorType.Solid);
+        for(BaseActor a : actorList){
+            r.set(a.getX(), a.getY(), a.getWidth(), a.getHeight());
+            if(r.contains(lantern)){
+                return true;
+            }
+        }
+
+        actorList = getList(getStage(), ActorType.Platform);
+        for(BaseActor a : actorList){
+            r.set(a.getX(), a.getY(), a.getWidth(), a.getHeight());
+            if(r.contains(lantern)){
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private Tile.TileCollision getCollision(int x, int y){
+        if (x < 0 || x >= 20)
+            return Tile.TileCollision.Impassable;
+        // Allow jumping past the level top and falling through the bottom.
+        if (y < 0 || y >= 15)
+            return Tile.TileCollision.Passable;
+
+        return tiles[x][y].collision;
+
+    }
+    public void loadContext(String spriteSet){
+
+        runAnimation = loadAnimationFromAssetManager("Sprites/"+spriteSet+"/Run.png",1,10,0.1f,true,false);
+        idleAnimation = loadAnimationFromAssetManager("Sprites/"+spriteSet+"/Idle.png",1,11,0.15f,true,false);
+
+        Texture idle = getAssetManager().get("Sprites/"+spriteSet+"/Idle.png", Texture.class);
+        int boundWidth = (int) (idle.getWidth()/10 * 0.35);
+        int boundLeft = (int)(idle.getWidth()/10 - boundWidth)/2;
+        int boundHeight = (int)(idle.getHeight() * 0.7);
+        int boundBottom = (int)(idle.getHeight() - boundHeight);
+        localBounds = new Rectangle(boundLeft, boundBottom, boundWidth, boundHeight);
+
+    }
+
     public enum FaceDirection{
         Left(-1),
         Right(1);
 
-        private int value;
+        public int value;
         FaceDirection(int value){
             this.value = value;
         }
@@ -25,117 +138,8 @@ public class Enemy extends BaseActor {
             } else {
                 return FaceDirection.Right;
             }
-
-        }
-
-    }
-
-    private Rectangle localBounds;
-    private float elapseTime;
-    private float waitTime;
-
-    public Rectangle getBoundingRectagle(){
-
-        int left = (int) (MathUtils.round(getX() - getOriginX()) + localBounds.x);
-        int top =  (int) (MathUtils.round(getY() - getOriginY()) + localBounds.y);
-
-        return new Rectangle(left, top, localBounds.width, localBounds.height);
-    }
-
-    private Animation<TextureRegion> runAnimation;
-    private Animation<TextureRegion> idleAnimation;
-    private Animation<TextureRegion> animation;
-    private FaceDirection direction = FaceDirection.Left;
-    private static final float maxWaitTime = 0.5f;
-    private static final float moveSpeed = 6f;
-
-
-    public Enemy(float x, float y, String spriteSet, Stage s) {
-        super(x, y, s);
-        this.elapseTime = 0f;
-        actorType = ActorType.Enemy;
-        waitTime=0f;
-        loadContext(spriteSet);
-    }
-
-
-
-    @Override
-    public void act(float dt) {
-        super.act(dt);
-
-        float posX = getX() + localBounds.width/2 * direction.value;
-        int tileX = (int) MathUtils.floor(posX / Tile.width) - direction.value;
-        int tileY = (int) MathUtils.floor(getY() / Tile.height);
-
-        if(waitTime > 0){
-            waitTime = Math.max(0.0f, waitTime - elapseTime);
-            if(waitTime <= 0.0f){
-                direction = FaceDirection.getDirection(direction.value * (-1));
-            }
-        } else {
-
-            if( LevelScreen.getCollision(tileX + direction.value, tileY - 1) == Tile.TileCollision.Impassable ||
-                    LevelScreen.getCollision(tileX + direction.value, tileY) == Tile.TileCollision.Passable){
-                waitTime = maxWaitTime;
-            } else {
-                float speed = direction.value * moveSpeed * dt;
-                setX(getX() + speed);
-            }
         }
     }
 
-    public void draw(float dt, SpriteBatch batch){
-
-        elapseTime += dt;
-//        if(waitTime > 0)
-//            animation = idleAnimation;
-//        else
-//            animation = runAnimation;
-        animation = runAnimation;
-        TextureRegion frame = animation.getKeyFrame(elapseTime);
-        batch.draw(frame, getX(), getY(), getOriginX(),getOriginY(),64, 64,  1.0f, 1.0f, 1);
-    }
-
-    public void loadContext(String spriteSet){
-        int frameWidth, frameHeight;
-        float frameDuration;
-        Texture texture;
-        TextureRegion[][] temp;
-        Array<TextureRegion> textureRegionArray;
-        spriteSet = "Sprites/"+spriteSet+"/";
-
-
-        texture = getAssetManager().get(spriteSet +"Run.png", Texture.class);
-        frameWidth = texture.getHeight();
-        frameHeight = texture.getHeight();
-        frameDuration = 0.1f;
-        temp = TextureRegion.split(texture, frameWidth, frameHeight);
-        textureRegionArray = new Array<>();
-        for(int c = 0; c< texture.getWidth() / texture.getHeight(); c++){
-            textureRegionArray.add(temp[0][c]);
-        }
-        runAnimation = new Animation(frameDuration, textureRegionArray, Animation.PlayMode.LOOP);
-
-
-        texture = getAssetManager().get(spriteSet +"Idle.png", Texture.class);
-        frameWidth = texture.getHeight();
-        frameHeight = texture.getHeight();
-        frameDuration = 0.15f;
-        temp = TextureRegion.split(texture, frameWidth, frameHeight);
-        textureRegionArray = new Array<>();
-        for(int c = 0; c< texture.getWidth() / texture.getHeight(); c++){
-            textureRegionArray.add(temp[0][c]);
-        }
-        idleAnimation = new Animation(frameDuration, textureRegionArray, Animation.PlayMode.LOOP);
-
-        int width = (int)(frameWidth * 0.35f);
-        int height = (int)(frameHeight * 0.7f);
-        int left = (frameWidth - width)/2;
-        int top = frameHeight - height;
-
-        localBounds = new Rectangle(left, top, width, height);
-
-    }
 
 }

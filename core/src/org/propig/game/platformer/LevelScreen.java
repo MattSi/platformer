@@ -4,12 +4,13 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 
 public class LevelScreen extends BaseScreen{
@@ -19,12 +20,10 @@ public class LevelScreen extends BaseScreen{
     List<Gem> gems;
     int levelIndex;
     int numberOfLevels;
-    List<Texture> layers;
     Music bgm;
-    private static Tile[][] tiles;
+    private Tile[][] tiles;
     private static int levelWidth;
     private static int levelHeight;
-    private Vector2 exit ;
     private Random random;
 
     public LevelScreen(PlatformerGame game) {
@@ -34,7 +33,6 @@ public class LevelScreen extends BaseScreen{
     @Override
     public void initialize() {
         game.assetManager.finishLoading();
-        player = new Player(new Vector2(200, 200), mainStage);
         gems = new ArrayList<>();
         levelIndex = -1;
         numberOfLevels = 3;
@@ -44,8 +42,6 @@ public class LevelScreen extends BaseScreen{
         bgm.setLooping(true);
         bgm.setVolume(0.8f);
        // bgm.play();
-
-
 
     }
 
@@ -59,42 +55,11 @@ public class LevelScreen extends BaseScreen{
         return false;
     }
 
-    @Override
-    public void render(float dt) {
-        Gdx.gl.glClearColor(0,0,0,1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        game.batch.begin();
-        for(int i=0; i<layers.size(); i++){
-            game.batch.draw(layers.get(i), 0,0);
-        }
-        //player.draw(batch, 0.5f);
-        for(int i = 0; i<levelWidth; i++){
-            for(int j=0; j<levelHeight; j++){
-                Tile tile = tiles[i][j];
-                if(tile.texture == null)
-                    continue;
-                game.batch.draw(tile.texture, i*Tile.width, j*Tile.height);
-            }
-        }
-        if(enemy !=null)
-            enemy.draw(dt, game.batch);
-        game.batch.end();
-        super.render(dt);
-    }
+
 
     private void loadNextLevel(){
         // 下一关
         levelIndex = (levelIndex + 1) % numberOfLevels;
-
-        // 首先装入背景
-        layers = new LinkedList<>();
-
-        for(int i=0; i<numberOfLevels; i++){
-            int segmentIndex = levelIndex;
-
-            layers.add( game.assetManager.get("Backgrounds/Layer" + i + "_" + segmentIndex + ".png", Texture.class));
-        }
-
         loadLevel();
     }
 
@@ -102,6 +67,11 @@ public class LevelScreen extends BaseScreen{
     public boolean keyDown(int keycode) {
         if(keycode == Input.Keys.N){
             loadNextLevel();
+        }
+        if(keycode == Input.Keys.M) {
+            float scalex = enemy.getScaleX();
+            enemy.direction = Enemy.FaceDirection.getDirection(enemy.direction.value * -1);
+            enemy.setScaleX(scalex*-1);
         }
         return false;
     }
@@ -113,7 +83,9 @@ public class LevelScreen extends BaseScreen{
         levelHeight = wordArray.length;
         levelWidth = wordArray[0].length();
         tiles = new Tile[levelWidth][levelHeight];
-        exit = new Vector2(-1, -1);
+        BaseActor.tiles = tiles;
+        new Background(0,0,mainStage,3);
+        player = new Player(new Vector2(200, 200), mainStage);
         enemy = null;
         for(Gem item: gems){
             item.dispose();
@@ -123,48 +95,40 @@ public class LevelScreen extends BaseScreen{
             for(int i=0; i<wordArray[j].length(); i++){
                 String word = wordArray[j];
                 char tileType = word.charAt(i);
-                tiles[i][Math.abs(j+1-levelHeight)] = loadTile(tileType, i, Math.abs(j-levelHeight));
+                tiles[i][levelHeight-j-1] = loadTile(tileType, i, levelHeight-j-1);
             }
         }
-    }
-
-
-    public static Tile.TileCollision getCollision(int x, int y){
-        if(x < 0 || x> levelWidth){
-            return Tile.TileCollision.Impassable;
-        }
-        if(y<0 || y>levelHeight){
-            return Tile.TileCollision.Passable;
-        }
-
-        return tiles[x][y].collision;
     }
 
     private Tile loadEnemyTile(int x, int y, String spriteSet){
         Vector2 start = Utils.getBottomCenter(getBounds(x, y));
         enemy = new Enemy(start.x, start.y, spriteSet, mainStage);
-        return new Tile(null, Tile.TileCollision.Passable);
+        return new Tile( Tile.TileCollision.Passable);
     }
 
     private Tile loadExitTile(int x, int y){
         Rectangle bound = getBounds(x, y);
-        exit = bound.getCenter(new Vector2(bound.x, bound.y));
-        return loadTile("Exit", Tile.TileCollision.Passable);
+        new ExitSign(bound.x, bound.y, mainStage);
+        return new Tile( Tile.TileCollision.Passable);
     }
 
     private Tile loadStartTile(int x, int y){
         Vector2 start = Utils.getBottomCenter(getBounds(x, y));
         player.setPosition(start.x, start.y);
-        return  new Tile(null, Tile.TileCollision.Passable);
+        return  new Tile(Tile.TileCollision.Passable);
     }
 
-    private Tile loadVarietyTile(String baseName, int variationCount, Tile.TileCollision collision){
+    private Tile loadVarietyTile(String baseName, int variationCount, Tile.TileCollision collision, int x, int y){
         int index = random.nextInt(variationCount);
-        return loadTile(baseName+index, collision);
+        Rectangle rec = getBounds(x, y);
+        new Solid("Tiles/"+baseName+index+".png", rec.x, rec.y, mainStage);
+        return new Tile(collision);
     }
-    private Tile loadTile(String name, Tile.TileCollision collision){
-        Texture texture = game.assetManager.get("Tiles/"+name+".png", Texture.class);
-        return new Tile(texture,collision);
+
+    private Tile loadPlatformTile(String name, Tile.TileCollision collision, int x, int y){
+        Rectangle rec = getBounds(x, y);
+        new Platfrom("Tiles/"+name+".png", rec.x, rec.y, mainStage);
+        return new Tile(collision);
     }
 
     public Rectangle getBounds(int x, int y){
@@ -172,31 +136,24 @@ public class LevelScreen extends BaseScreen{
     }
 
     public Tile loadGemTile(int x, int y){
-        Rectangle bound = getBounds(x, y);
-        gems.add(new Gem(bound.x, bound.y-Tile.height, mainStage));
-        return new Tile(null, Tile.TileCollision.Passable);
+        Rectangle rec = getBounds(x, y);
+        gems.add(new Gem(rec.x , rec.y , mainStage));
+        return new Tile( Tile.TileCollision.Passable);
     }
 
     private Tile loadTile(char tileType, int x, int y){
         switch (tileType){
             // Blank space
             case '.':
-                return new Tile(null, Tile.TileCollision.Passable);
-
+                return new Tile(Tile.TileCollision.Passable);
             // Exit
             case 'X':
                 return loadExitTile(x, y);
-
             // Gem
             case 'G':
                 return loadGemTile(x, y);
-                //return new Tile(null, Tile.TileCollision.Passable);
-
-
             case '-':
-                return loadTile("Platform", Tile.TileCollision.Platform);
-
-
+                return loadPlatformTile("Platform", Tile.TileCollision.Platform, x, y);
             case 'A':
                 return loadEnemyTile(x, y, "MonsterA");
             case 'B':
@@ -207,19 +164,18 @@ public class LevelScreen extends BaseScreen{
                 return loadEnemyTile(x, y, "MonsterD");
 
             case '~':
-                return loadVarietyTile("BlockB", 2, Tile.TileCollision.Platform);
+                return loadVarietyTile("BlockB", 2, Tile.TileCollision.Platform, x, y);
             case ':':
-                return loadVarietyTile("BlockB", 2, Tile.TileCollision.Passable);
+                return loadVarietyTile("BlockB", 2, Tile.TileCollision.Passable, x, y);
 
             case '1':
                 return loadStartTile(x, y);
 
             case '#':
-                return loadVarietyTile("BlockA", 7, Tile.TileCollision.Impassable);
+                return loadVarietyTile("BlockA", 7, Tile.TileCollision.Impassable, x, y);
 
             default:
                 throw new RuntimeException("Unsupported tile type character");
         }
-
     }
 }

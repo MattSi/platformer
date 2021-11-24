@@ -1,14 +1,10 @@
 package org.propig.game.platformer;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Sound;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.utils.Array;
 
 public class Player extends BaseActor {
     private Animation<TextureRegion> idleAnimation;
@@ -47,29 +43,14 @@ public class Player extends BaseActor {
 
     }
     private void loadContent(){
-        int frameWidth, frameHeight;
-        float frameDuration;
-        Texture texture = getAssetManager().get("Sprites/Player/Run.png", Texture.class);
+        runAnimation = loadAnimationFromAssetManager("Sprites/Player/Run.png",1,10,0.06f,true,false);
+        idleAnimation = loadAnimationFromAssetManager("Sprites/Player/Idle.png",1,10,0.15f,true,false);
+        jumpAnimation = loadAnimationFromAssetManager("Sprites/Player/Jump.png",1,10,0.1f,false,false);
+        celebrateAnimation = loadAnimationFromAssetManager("Sprites/Player/Celebrate.png",1,10,0.1f,false,false);
+        dieAnimation = loadAnimationFromAssetManager("Sprites/Player/Die.png",1,10,0.1f,false,false);
 
-        frameWidth = texture.getHeight();
-        frameHeight = texture.getHeight();
-        frameDuration = 0.06f;
-        TextureRegion[][] temp = TextureRegion.split(texture, frameWidth, frameHeight);
-        Array<TextureRegion> textureRegionArray = new Array<>();
-        for(int c = 0; c< texture.getWidth() / texture.getHeight(); c++){
-            textureRegionArray.add(temp[0][c]);
-        }
-        runAnimation = new Animation(frameDuration, textureRegionArray, Animation.PlayMode.LOOP);
 
     }
 
-    public void draw(Batch batch, float alphaModulation) {
-        delta = Math.min(0.06f, Gdx.graphics.getDeltaTime());
-        elapseTime += delta;
-        if(runAnimation != null){
-            TextureRegion frame = runAnimation.getKeyFrame(elapseTime);
-            //frame.flip(true,false);
-            batch.draw(frame, getX(), getY(), 10,10,64, 64, -1*1.0f, 1.0f, 1);
-        }
-    }
+
 }
