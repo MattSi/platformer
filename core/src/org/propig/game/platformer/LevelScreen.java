@@ -50,7 +50,7 @@ public class LevelScreen extends BaseScreen{
         Rectangle r = new Rectangle(0,0,0,0);
         for(BaseActor a : BaseActor.getList(mainStage, ActorType.Solid)){
             r.set(a.getX(), a.getY(), a.getWidth(), a.getHeight());
-            if(r.contains(player.lanternBottom) && player.playerStatus != Player.PlayerStatus.Jumping){
+            if(r.contains(player.lanternBottom) && player.velocityVec.y<=0f){
                 player.velocityVec.y=0;
                 player.setY(a.getY()+a.getHeight());
             }
@@ -62,9 +62,9 @@ public class LevelScreen extends BaseScreen{
 
         for(BaseActor a : BaseActor.getList(mainStage, ActorType.Platform)){
             r.set(a.getX(), a.getY(), a.getWidth(), a.getHeight());
-            if(r.contains(player.lanternBottom) && player.playerStatus != Player.PlayerStatus.Jumping){
+            if(r.contains(player.lanternBottom) && player.velocityVec.y <=0f){
                 player.velocityVec.y=0;
-                player.setY(a.getY()+a.getHeight() + 2);
+                player.setY(a.getY()+a.getHeight());
             }
         }
     }

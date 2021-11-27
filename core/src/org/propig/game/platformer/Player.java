@@ -35,16 +35,15 @@ public class Player extends BaseActor implements ControllerListener {
 
     public Vector2 lanternTop, lanternBottom, lanternFront;
 
-    public PlayerStatus playerStatus;
     private float movement;
     private boolean isJumping;
     public FaceDirection direction = FaceDirection.Front;
     private static final float moveAcceleration = 13000f;
     private static final float maxMoveSpeed = 1000f;
-    private static final float gravityAcceleration = 1000f;
+    private static final float gravityAcceleration = 1500f;
     private static final float maxFallSpeed = 550f;
     private static final float groundDragFactor = 0.48f;
-    private static final float jumpVelocity = 550f;
+    private static final float jumpVelocity = 650f;
 
 
     public Player( Vector2 position, Stage s) {
@@ -55,7 +54,6 @@ public class Player extends BaseActor implements ControllerListener {
         lanternFront = new Vector2(0,0);
         loadContent();
         setAnimation(idleAnimation);
-        playerStatus = PlayerStatus.Idle;
         movement = 0.0f;
         isJumping = false;
         Controllers.clearListeners();
@@ -86,19 +84,8 @@ public class Player extends BaseActor implements ControllerListener {
         } else {
             lanternFront = new Vector2(getX() + getWidth() - localBounds.width/2, getY() );
         }
-        lanternTop = new Vector2(getX() + getWidth()/2, getY() + getHeight() + 5);
+        lanternTop = new Vector2(getX() + getWidth()/2, getY() + getHeight() );
 
-
-        if(playerStatus == PlayerStatus.Jumping || playerStatus == PlayerStatus.Falling){
-            setAnimation(jumpAnimation);
-        } else {
-            if(MathUtils.round(Math.abs(velocityVec.x)) >2){
-                setAnimation(runAnimation);
-            } else {
-                velocityVec.x=0f;
-                setAnimation(idleAnimation);
-            }
-        }
 
         /*
         1. 处理连续输入
@@ -111,14 +98,15 @@ public class Player extends BaseActor implements ControllerListener {
         velocityVec.add( speedX, speedY);
 
         velocityVec.x *= groundDragFactor;
-        velocityVec.x = MathUtils.clamp(velocityVec.x, -maxMoveSpeed, maxMoveSpeed);
-        velocityVec.y = MathUtils.clamp(velocityVec.y, -maxMoveSpeed, maxMoveSpeed);
+        velocityVec.x = MathUtils.round(MathUtils.clamp(velocityVec.x, -maxMoveSpeed, maxMoveSpeed));
+        velocityVec.y = MathUtils.round(MathUtils.clamp(velocityVec.y, -maxMoveSpeed, maxMoveSpeed));
 
 
 
         moveBy(velocityVec.x * dt, velocityVec.y * dt);
 
         if(onSolid(lanternBottom)){
+            System.out.printf("%.5f\n", velocityVec.x);
             if(velocityVec.x == 0){
                 setAnimation(idleAnimation);
             } else {
@@ -126,11 +114,6 @@ public class Player extends BaseActor implements ControllerListener {
             }
         } else {
             setAnimation(jumpAnimation);
-            if( velocityVec.y > 0) {
-                playerStatus = PlayerStatus.Jumping;
-            } else {
-                playerStatus = PlayerStatus.Falling;
-            }
         }
 
 
@@ -181,7 +164,6 @@ public class Player extends BaseActor implements ControllerListener {
     
     public void jump(){
         velocityVec.y += jumpVelocity;
-        playerStatus = PlayerStatus.Jumping;
     }
 
     @Override
@@ -239,13 +221,6 @@ public class Player extends BaseActor implements ControllerListener {
         return false;
     }
 
-
-    public enum PlayerStatus{
-        Idle,
-        Running,
-        Jumping,
-        Falling
-    }
 
 
 }
