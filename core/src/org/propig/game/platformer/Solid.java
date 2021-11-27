@@ -9,6 +9,7 @@ public class Solid extends BaseActor{
         actorType = ActorType.Solid;
         this.resName = resName;
 
+        setBoundaryRectangle();
         loadAnimationFromAssetManager(resName, 1,1,1,false, true);
     }
 

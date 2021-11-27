@@ -3,6 +3,7 @@ package org.propig.game.platformer;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.controllers.Controller;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
@@ -20,6 +21,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Extends functionality of the LibGDX Actor class.
@@ -35,11 +37,12 @@ public class BaseActor extends Group
     protected float elapsedTime;
     private boolean animationPaused;
 
-    private Vector2 velocityVec;
-    private Vector2 accelerationVec;
+    protected Vector2 velocityVec;
+    protected Vector2 accelerationVec;
     private float acceleration;
     private float maxSpeed;
     private float deceleration;
+    protected Rectangle localBounds;
 
     public Polygon boundaryPolygon;
 
@@ -82,6 +85,10 @@ public class BaseActor extends Group
 
     public AssetManager getAssetManager(){
         return getGameInstance().assetManager;
+    }
+
+    public Controller getController(){
+        return getGameInstance().controller;
     }
     /** 
      *  If this object moves completely past the world bounds,
@@ -437,12 +444,14 @@ public class BaseActor extends Group
     protected void setBoundaryRectangle()
     {
         float w = getWidth();
-        float h = getHeight(); 
-
-        float[] vertices = {0,0, w,0, w,h, 0,h};
-        boundaryPolygon = new Polygon(vertices);
+        float h = getHeight();
+        setBoundaryRectangle(w, h);
     }
 
+    protected void setBoundaryRectangle(float width, float height){
+        float[] vertices = {0,0, width,0, width, height, 0, height};
+        boundaryPolygon = new Polygon(vertices);
+    }
     /**
      *  Replace default (rectangle) collision polygon with an n-sided polygon. <br>
      *  Vertices of polygon lie on the ellipse contained within bounding rectangle.
@@ -584,14 +593,14 @@ public class BaseActor extends Group
      */
     public void boundToWorld()
     {
-        if (getX() < 0)
-            setX(0);
-        if (getX() + getWidth() > worldBounds.width)    
-            setX(worldBounds.width - getWidth());
-        if (getY() < 0)
-            setY(0);
-        if (getY() + getHeight() > worldBounds.height)
-            setY(worldBounds.height - getHeight());
+        if (getX() + localBounds.width/2 < 0)
+            setX(-localBounds.width);
+        if (getX() + getWidth() - localBounds.width/2 > worldBounds.width)
+            setX(worldBounds.width - getWidth() + localBounds.width/3);
+//        if (getY() < 0)
+//            setY(0);
+//        if (getY() + getHeight() > worldBounds.height)
+//            setY(worldBounds.height - getHeight());
     }
 
     /**
@@ -718,4 +727,26 @@ public class BaseActor extends Group
         this.actorType = actorType;
     }
 
+
+    protected boolean onSolid(Vector2 lantern){
+        Rectangle r = new Rectangle(0,0,0,0);
+
+        List<BaseActor> actorList = getList(getStage(), ActorType.Solid);
+        for(BaseActor a : actorList){
+            r.set(a.getX(), a.getY(), a.getWidth(), a.getHeight());
+            if(r.contains(lantern)){
+                return true;
+            }
+        }
+
+        actorList = getList(getStage(), ActorType.Platform);
+        for(BaseActor a : actorList){
+            r.set(a.getX(), a.getY(), a.getWidth(), a.getHeight());
+            if(r.contains(lantern)){
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

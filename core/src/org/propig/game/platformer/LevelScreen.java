@@ -47,7 +47,22 @@ public class LevelScreen extends BaseScreen{
 
     @Override
     public void update(float dt) {
+        Rectangle r = new Rectangle(0,0,0,0);
+        for(BaseActor a : BaseActor.getList(mainStage, ActorType.Solid)){
+            r.set(a.getX(), a.getY(), a.getWidth(), a.getHeight());
+            if(r.contains(player.lanternBottom) && player.playerStatus != Player.PlayerStatus.Jumping){
+                player.velocityVec.y=0;
+                player.setY(a.getY()+a.getHeight());
+            }
+        }
 
+        for(BaseActor a : BaseActor.getList(mainStage, ActorType.Platform)){
+            r.set(a.getX(), a.getY(), a.getWidth(), a.getHeight());
+            if(r.contains(player.lanternBottom) && player.playerStatus != Player.PlayerStatus.Jumping){
+                player.velocityVec.y=0;
+                player.setY(a.getY()+a.getHeight());
+            }
+        }
     }
 
     @Override
@@ -70,7 +85,7 @@ public class LevelScreen extends BaseScreen{
         }
         if(keycode == Input.Keys.M) {
             float scalex = enemy.getScaleX();
-            enemy.direction = Enemy.FaceDirection.getDirection(enemy.direction.value * -1);
+            enemy.direction = FaceDirection.getDirection(enemy.direction.value * -1);
             enemy.setScaleX(scalex*-1);
         }
         return false;
@@ -84,6 +99,7 @@ public class LevelScreen extends BaseScreen{
         levelWidth = wordArray[0].length();
         tiles = new Tile[levelWidth][levelHeight];
         BaseActor.tiles = tiles;
+        BaseActor.setWorldBounds(levelWidth*Tile.width, levelHeight*Tile.height);
         new Background(0,0,mainStage,3);
         player = new Player(new Vector2(200, 200), mainStage);
         enemy = null;

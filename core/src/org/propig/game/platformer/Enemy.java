@@ -78,27 +78,7 @@ public class Enemy extends BaseActor {
 
     }
 
-    public boolean onSolid(Vector2 lantern){
-        Rectangle r = new Rectangle(0,0,0,0);
 
-        List<BaseActor> actorList = getList(getStage(), ActorType.Solid);
-        for(BaseActor a : actorList){
-            r.set(a.getX(), a.getY(), a.getWidth(), a.getHeight());
-            if(r.contains(lantern)){
-                return true;
-            }
-        }
-
-        actorList = getList(getStage(), ActorType.Platform);
-        for(BaseActor a : actorList){
-            r.set(a.getX(), a.getY(), a.getWidth(), a.getHeight());
-            if(r.contains(lantern)){
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     private Tile.TileCollision getCollision(int x, int y){
         if (x < 0 || x >= 20)
@@ -124,22 +104,6 @@ public class Enemy extends BaseActor {
 
     }
 
-    public enum FaceDirection{
-        Left(-1),
-        Right(1);
-
-        public int value;
-        FaceDirection(int value){
-            this.value = value;
-        }
-        public static FaceDirection getDirection(int value){
-            if(value == -1){
-                return FaceDirection.Left;
-            } else {
-                return FaceDirection.Right;
-            }
-        }
-    }
 
 
 }
