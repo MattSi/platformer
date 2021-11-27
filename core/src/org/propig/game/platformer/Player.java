@@ -86,7 +86,7 @@ public class Player extends BaseActor implements ControllerListener {
         } else {
             lanternFront = new Vector2(getX() + getWidth() - localBounds.width/2, getY() );
         }
-        lanternTop = new Vector2(getX(), getY() + getHeight() + 5);
+        lanternTop = new Vector2(getX() + getWidth()/2, getY() + getHeight() + 5);
 
 
         if(playerStatus == PlayerStatus.Jumping || playerStatus == PlayerStatus.Falling){

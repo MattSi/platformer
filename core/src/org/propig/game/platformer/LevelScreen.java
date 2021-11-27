@@ -54,13 +54,17 @@ public class LevelScreen extends BaseScreen{
                 player.velocityVec.y=0;
                 player.setY(a.getY()+a.getHeight());
             }
+
+            if(r.contains((player.lanternTop))){
+                  player.velocityVec.y = 0;
+            }
         }
 
         for(BaseActor a : BaseActor.getList(mainStage, ActorType.Platform)){
             r.set(a.getX(), a.getY(), a.getWidth(), a.getHeight());
             if(r.contains(player.lanternBottom) && player.playerStatus != Player.PlayerStatus.Jumping){
                 player.velocityVec.y=0;
-                player.setY(a.getY()+a.getHeight());
+                player.setY(a.getY()+a.getHeight() + 2);
             }
         }
     }
@@ -87,6 +91,11 @@ public class LevelScreen extends BaseScreen{
             float scalex = enemy.getScaleX();
             enemy.direction = FaceDirection.getDirection(enemy.direction.value * -1);
             enemy.setScaleX(scalex*-1);
+        }
+        if(keycode == Input.Keys.SPACE && player.velocityVec.y == 0){
+            if(player.onSolid(player.lanternBottom) ){
+                player.jump();
+            }
         }
         return false;
     }
