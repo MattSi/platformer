@@ -593,14 +593,10 @@ public class BaseActor extends Group
      */
     public void boundToWorld()
     {
-        if (getX() + localBounds.width/2 < 0)
-            setX(-localBounds.width);
-        if (getX() + getWidth() - localBounds.width/2 > worldBounds.width)
-            setX(worldBounds.width - getWidth() + localBounds.width/3);
-//        if (getY() < 0)
-//            setY(0);
-//        if (getY() + getHeight() > worldBounds.height)
-//            setY(worldBounds.height - getHeight());
+        if (getX() + getWidth()/5 < 0)
+            setX(-getWidth()/5);
+        if (getX() + getWidth()*0.7f > worldBounds.width)
+            setX(worldBounds.width - getWidth()*0.7f);
     }
 
     /**

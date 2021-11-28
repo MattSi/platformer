@@ -6,6 +6,7 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.controllers.Controller;
 import com.badlogic.gdx.controllers.ControllerListener;
 import com.badlogic.gdx.controllers.Controllers;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -18,9 +19,9 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 public class Player extends BaseActor implements ControllerListener {
     private Animation<TextureRegion> idleAnimation;
     private Animation<TextureRegion> runAnimation;
-    private Animation jumpAnimation;
-    private Animation celebrateAnimation;
-    private Animation dieAnimation;
+    private Animation<TextureRegion> jumpAnimation;
+    private Animation<TextureRegion> celebrateAnimation;
+    private Animation<TextureRegion> dieAnimation;
 
 
     private Sound killedSound;
@@ -34,6 +35,7 @@ public class Player extends BaseActor implements ControllerListener {
 
 
     public Vector2 lanternTop, lanternBottom, lanternFront;
+    private BaseActor sensorTop, sensorBottom, sensorFront;
 
     private float movement;
     private boolean isJumping;
@@ -59,6 +61,20 @@ public class Player extends BaseActor implements ControllerListener {
         Controllers.clearListeners();
         Controllers.addListener(this);
 
+        sensorTop = new BaseActor(0,0,s);
+        sensorTop.loadTexture("Sprites/White.png");
+        sensorTop.setSize(localBounds.width, Tile.height/2);
+        sensorTop.setBoundaryRectangle();
+        sensorTop.setVisible(false);
+        sensorTop.setColor(Color.GREEN);
+
+        sensorFront = new BaseActor(0,0,s);
+        sensorFront.loadTexture("Sprites/White.png");
+        sensorFront.setSize(5, getHeight());
+        sensorFront.setBoundaryRectangle();
+        sensorFront.setVisible(false);
+        sensorFront.setColor(Color.GREEN);
+
     }
 
     public void reset(Vector2 position){
@@ -80,11 +96,15 @@ public class Player extends BaseActor implements ControllerListener {
          */
         lanternBottom = new Vector2(getX() + getWidth()/2, getY() - Tile.height/4);
         if(direction == FaceDirection.Left || direction == FaceDirection.Front){
-            lanternFront = new Vector2(getX() + localBounds.width /2, getY() );
+            lanternFront = new Vector2(getX() + getWidth()/5 , getY() + getHeight()/2);
         } else {
-            lanternFront = new Vector2(getX() + getWidth() - localBounds.width/2, getY() );
+            lanternFront = new Vector2(getX() + getWidth() * 0.7f, getY() + getHeight()/2);
         }
-        lanternTop = new Vector2(getX() + getWidth()/2, getY() + getHeight() );
+        lanternTop = new Vector2(getX() + getWidth()/2, getY() +localBounds.height  );
+
+        sensorTop.setPosition(getX()+getWidth()/2, getY()+ localBounds.height );
+        sensorFront.setPosition(lanternFront.x, getY());
+
 
 
         /*
@@ -102,11 +122,9 @@ public class Player extends BaseActor implements ControllerListener {
         velocityVec.y = MathUtils.round(MathUtils.clamp(velocityVec.y, -maxMoveSpeed, maxMoveSpeed));
 
 
-
         moveBy(velocityVec.x * dt, velocityVec.y * dt);
 
         if(onSolid(lanternBottom)){
-            System.out.printf("%.5f\n", velocityVec.x);
             if(velocityVec.x == 0){
                 setAnimation(idleAnimation);
             } else {
@@ -118,18 +136,16 @@ public class Player extends BaseActor implements ControllerListener {
 
 
         if(velocityVec.x < 0){
+            direction = FaceDirection.Left;
             setScaleX(1);
         } else {
             setScaleX(-1);
+            direction = FaceDirection.Right;
         }
-        // setX( x);
-        // setY(y);
-
 
         boundToWorld();
         movement = 0.0f;
         isJumping = false;
-      // velocityVec.set(0,0);
 
     }
 
@@ -164,6 +180,7 @@ public class Player extends BaseActor implements ControllerListener {
     
     public void jump(){
         velocityVec.y += jumpVelocity;
+        jumpSound.play();
     }
 
     @Override
@@ -176,19 +193,15 @@ public class Player extends BaseActor implements ControllerListener {
         return false;
     }
 
-//
-//    public void applyPhysics(float dt){
-//        Vector2 previousPosition = position;
-//        velocityVec.x += movement*moveAcceleration*dt;
-//        velocityVec.y = MathUtils.clamp(velocityVec.y - gravityAcceleration*dt, -maxFallSpeed, maxFallSpeed);
-//    }
-
     private void loadContent(){
         runAnimation = loadAnimationFromAssetManager("Sprites/Player/Run.png",1,10,0.06f,true,false);
         idleAnimation = loadAnimationFromAssetManager("Sprites/Player/Idle.png",1,1,1f,true,false);
-        jumpAnimation = loadAnimationFromAssetManager("Sprites/Player/Jump.png",1,11,0.1f,false,false);
+        jumpAnimation = loadAnimationFromAssetManager("Sprites/Player/Jump.png",1,11,0.1f,true,false);
         celebrateAnimation = loadAnimationFromAssetManager("Sprites/Player/Celebrate.png",1,11,0.1f,false,false);
         dieAnimation = loadAnimationFromAssetManager("Sprites/Player/Die.png",1,12,0.1f,false,false);
+
+        jumpSound = getAssetManager().get("Sounds/PlayerJump.wav", Sound.class);
+
 
 
         Texture idle = getAssetManager().get("Sprites/Player/Idle.png", Texture.class);

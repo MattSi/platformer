@@ -4,7 +4,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
@@ -25,6 +24,7 @@ public class LevelScreen extends BaseScreen{
     private static int levelWidth;
     private static int levelHeight;
     private Random random;
+    private float playerX, playerY;
 
     public LevelScreen(PlatformerGame game) {
         super(game);
@@ -41,30 +41,45 @@ public class LevelScreen extends BaseScreen{
         bgm = game.assetManager.get("Sounds/Music.mp3", Music.class);
         bgm.setLooping(true);
         bgm.setVolume(0.8f);
-       // bgm.play();
+        bgm.play();
 
     }
 
     @Override
     public void update(float dt) {
-        Rectangle r = new Rectangle(0,0,0,0);
-        for(BaseActor a : BaseActor.getList(mainStage, ActorType.Solid)){
+        Rectangle r = new Rectangle(0, 0, 0, 0);
+        for (BaseActor a : BaseActor.getList(mainStage, ActorType.Solid)) {
             r.set(a.getX(), a.getY(), a.getWidth(), a.getHeight());
-            if(r.contains(player.lanternBottom) && player.velocityVec.y<=0f){
-                player.velocityVec.y=0;
-                player.setY(a.getY()+a.getHeight());
+            if (r.contains(player.lanternBottom) && player.velocityVec.y <= 0f) {
+                player.velocityVec.y = 0;
+                player.setY(a.getY() + a.getHeight());
             }
 
-            if(r.contains((player.lanternTop))){
-                  player.velocityVec.y = 0;
+            if (r.contains((player.lanternTop))) {
+                player.velocityVec.y = 0;
+                player.setY(a.getY() - player.getHeight());
+            }
+
+            if(r.contains(player.lanternFront)){
+                if(player.direction == FaceDirection.Left || player.direction == FaceDirection.Front){
+                    player.setX(a.getX() + player.getWidth()/5);
+                } else {
+                    player.setX(a.getX() - player.getWidth() * 0.7f);
+                }
+                player.velocityVec.x = 0;
+
             }
         }
 
-        for(BaseActor a : BaseActor.getList(mainStage, ActorType.Platform)){
+        for (BaseActor a : BaseActor.getList(mainStage, ActorType.Platform)) {
             r.set(a.getX(), a.getY(), a.getWidth(), a.getHeight());
-            if(r.contains(player.lanternBottom) && player.velocityVec.y <=0f){
-                player.velocityVec.y=0;
-                player.setY(a.getY()+a.getHeight());
+            if (r.contains(player.lanternBottom) && player.velocityVec.y <= 0f) {
+                player.velocityVec.y = 0;
+                player.setY(a.getY() + a.getHeight());
+            }
+
+            if(r.contains(player.lanternFront)){
+                player.velocityVec.x = 0;
             }
         }
     }
@@ -100,29 +115,32 @@ public class LevelScreen extends BaseScreen{
         return false;
     }
 
-    public void loadLevel(){
-        FileHandle handle = Gdx.files.internal("Levels/"+ levelIndex+".txt");
+    public void loadLevel() {
+        mainStage.clear();
+        FileHandle handle = Gdx.files.internal("Levels/" + levelIndex + ".txt");
         String data = handle.readString();
         String[] wordArray = data.split("\\r?\\n");
         levelHeight = wordArray.length;
         levelWidth = wordArray[0].length();
         tiles = new Tile[levelWidth][levelHeight];
         BaseActor.tiles = tiles;
-        BaseActor.setWorldBounds(levelWidth*Tile.width, levelHeight*Tile.height);
-        new Background(0,0,mainStage,3);
-        player = new Player(new Vector2(200, 200), mainStage);
+        BaseActor.setWorldBounds(levelWidth * Tile.width, levelHeight * Tile.height);
+        new Background(0, 0, mainStage, 3);
+
         enemy = null;
-        for(Gem item: gems){
+        for (Gem item : gems) {
             item.dispose();
         }
         gems.clear();
-        for(int j = 0; j<wordArray.length; j++){
-            for(int i=0; i<wordArray[j].length(); i++){
+        for (int j = 0; j < wordArray.length; j++) {
+            for (int i = 0; i < wordArray[j].length(); i++) {
                 String word = wordArray[j];
                 char tileType = word.charAt(i);
-                tiles[i][levelHeight-j-1] = loadTile(tileType, i, levelHeight-j-1);
+                tiles[i][levelHeight - j - 1] = loadTile(tileType, i, levelHeight - j - 1);
             }
         }
+
+        player = new Player(new Vector2(playerX, playerY), mainStage);
     }
 
     private Tile loadEnemyTile(int x, int y, String spriteSet){
@@ -139,7 +157,8 @@ public class LevelScreen extends BaseScreen{
 
     private Tile loadStartTile(int x, int y){
         Vector2 start = Utils.getBottomCenter(getBounds(x, y));
-        player.setPosition(start.x, start.y);
+        playerX = start.x;
+        playerY = start.y;
         return  new Tile(Tile.TileCollision.Passable);
     }
 
