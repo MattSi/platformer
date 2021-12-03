@@ -61,7 +61,9 @@ public class BaseActor extends Group
 
         // perform additional initialization tasks
         setPosition(x,y);
-        s.addActor(this);
+        if(s != null) {
+            s.addActor(this);
+        }
 
         // initialize animation data
         animation = null;

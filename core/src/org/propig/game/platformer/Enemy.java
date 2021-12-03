@@ -1,6 +1,5 @@
 package org.propig.game.platformer;
 
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -8,8 +7,6 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-
-import java.util.List;
 
 public class Enemy extends BaseActor {
     private Animation<TextureRegion> runAnimation;
@@ -20,7 +17,6 @@ public class Enemy extends BaseActor {
     private static final float moveSpeed = 64.0f;
     private Rectangle localBounds;
     private float waitTime;
-    private BaseActor belowSensor;
 
     public Rectangle getBoundingRectagle(){
 
@@ -38,13 +34,6 @@ public class Enemy extends BaseActor {
 
 
         animation=runAnimation;
-        belowSensor = new Background(0,0, s, -1);
-        belowSensor.loadTexture("Sprites/White.png");
-        belowSensor.setSize(getWidth()-8, 20);
-        belowSensor.setBoundaryRectangle();
-        belowSensor.setVisible(false);
-
-
         setAnimation(runAnimation);
     }
 
@@ -65,8 +54,6 @@ public class Enemy extends BaseActor {
             if(onSolid(lantern)){
                 float speed = direction.value * moveSpeed * dt;
                 setX(getX() + speed);
-                belowSensor.setPosition(getX()+localBounds.x+4, getY() - 10 );
-                belowSensor.setColor(Color.GREEN);
                 setAnimation(runAnimation);
             } else {
                 direction = FaceDirection.getDirection(direction.value * -1);

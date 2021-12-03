@@ -9,7 +9,9 @@ import com.badlogic.gdx.controllers.Controllers;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -36,6 +38,7 @@ public class Player extends BaseActor implements ControllerListener {
 
     public Vector2 lanternTop, lanternBottom, lanternFront;
     private BaseActor sensorTop, sensorBottom, sensorFront;
+    private BaseActor sensorTest;
 
     private float movement;
     private boolean isJumping;
@@ -46,6 +49,13 @@ public class Player extends BaseActor implements ControllerListener {
     private static final float maxFallSpeed = 550f;
     private static final float groundDragFactor = 0.48f;
     private static final float jumpVelocity = 650f;
+
+
+    // Shaders
+    String vertexShaderCode;
+    String fragmentShaderCode;
+    ShaderProgram shaderProgram;
+    float time;
 
 
     public Player( Vector2 position, Stage s) {
@@ -75,6 +85,21 @@ public class Player extends BaseActor implements ControllerListener {
         sensorFront.setVisible(false);
         sensorFront.setColor(Color.GREEN);
 
+        sensorTest = new BaseActor(0,0,s);
+        sensorTest.loadTexture("Sprites/White.png");
+        sensorTest.setSize(450, 10);
+        sensorTest.setBoundaryRectangle();
+        sensorTest.setVisible(false);
+        sensorTest.setColor(Color.GREEN);
+
+
+        vertexShaderCode = Gdx.files.internal("Shaders/default.vs").readString();
+        fragmentShaderCode = Gdx.files.internal("Shaders/border.fs").readString();
+        shaderProgram = new ShaderProgram(vertexShaderCode, fragmentShaderCode);
+        time = 0;
+        if(!shaderProgram.isCompiled()){
+            System.out.printf("Shader compile error: %s\n", shaderProgram.getLog());
+        }
     }
 
     public void reset(Vector2 position){
@@ -86,6 +111,7 @@ public class Player extends BaseActor implements ControllerListener {
     @Override
     public void act(float dt) {
         super.act(dt);
+        time += dt;
         /**
          * 1. 获取当前Player的状态，位置信息
          * 2. 更新各个方向灯笼探针的信息
@@ -104,6 +130,7 @@ public class Player extends BaseActor implements ControllerListener {
 
         sensorTop.setPosition(getX()+getWidth()/2, getY()+ localBounds.height );
         sensorFront.setPosition(lanternFront.x, getY());
+        sensorTest.setPosition(lanternFront.x, lanternFront.y);
 
 
 
@@ -234,6 +261,13 @@ public class Player extends BaseActor implements ControllerListener {
         return false;
     }
 
-
-
+    @Override
+    public void draw(Batch batch, float parentAlpha) {
+//        batch.setShader(shaderProgram);
+//        shaderProgram.setUniformf("u_imageSize", new Vector2(getWidth(), getHeight()));
+//        shaderProgram.setUniformf("u_borderColor", Color.BLACK);
+//        shaderProgram.setUniformf("u_borderSize", 3);
+        super.draw(batch, parentAlpha);
+//        batch.setShader(null);
+    }
 }

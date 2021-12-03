@@ -82,6 +82,11 @@ public class LevelScreen extends BaseScreen{
                 player.velocityVec.x = 0;
             }
         }
+
+        for(BaseActor a : BaseActor.getList(mainStage, ActorType.Gem)){
+            Gem gem = (Gem)a;
+            //player.getBoundaryPolygon()
+        }
     }
 
     @Override
@@ -117,6 +122,7 @@ public class LevelScreen extends BaseScreen{
 
     public void loadLevel() {
         mainStage.clear();
+
         FileHandle handle = Gdx.files.internal("Levels/" + levelIndex + ".txt");
         String data = handle.readString();
         String[] wordArray = data.split("\\r?\\n");
@@ -126,7 +132,7 @@ public class LevelScreen extends BaseScreen{
         BaseActor.tiles = tiles;
         BaseActor.setWorldBounds(levelWidth * Tile.width, levelHeight * Tile.height);
         new Background(0, 0, mainStage, 3);
-
+        player = new Player(new Vector2(playerX, playerY), null);
         enemy = null;
         for (Gem item : gems) {
             item.dispose();
@@ -140,12 +146,13 @@ public class LevelScreen extends BaseScreen{
             }
         }
 
-        player = new Player(new Vector2(playerX, playerY), mainStage);
+        mainStage.addActor(enemy);
+        mainStage.addActor(player);
     }
 
     private Tile loadEnemyTile(int x, int y, String spriteSet){
         Vector2 start = Utils.getBottomCenter(getBounds(x, y));
-        enemy = new Enemy(start.x, start.y, spriteSet, mainStage);
+        enemy = new Enemy(start.x, start.y, spriteSet, null);
         return new Tile( Tile.TileCollision.Passable);
     }
 
@@ -157,8 +164,7 @@ public class LevelScreen extends BaseScreen{
 
     private Tile loadStartTile(int x, int y){
         Vector2 start = Utils.getBottomCenter(getBounds(x, y));
-        playerX = start.x;
-        playerY = start.y;
+        player.setPosition(start.x, start.y);
         return  new Tile(Tile.TileCollision.Passable);
     }
 

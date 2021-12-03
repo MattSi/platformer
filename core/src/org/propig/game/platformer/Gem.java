@@ -26,7 +26,7 @@ public class Gem extends BaseActor{
     }
 
     public Circle getBoundingCircle(){
-        return new Circle(getX(), getY(), Tile.width / 3.0f);
+        return new Circle(getX() + Tile.width/2, getY() + Tile.height/2, Tile.width / 3.0f);
     }
 
     @Override
