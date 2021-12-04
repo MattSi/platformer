@@ -17,28 +17,24 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 
-
-public class Player extends BaseActor implements ControllerListener {
-    private Animation<TextureRegion> idleAnimation;
-    private Animation<TextureRegion> runAnimation;
-    private Animation<TextureRegion> jumpAnimation;
-    private Animation<TextureRegion> celebrateAnimation;
-    private Animation<TextureRegion> dieAnimation;
+import java.util.HashMap;
 
 
+public class Player extends BaseActor {
+    private HashMap<PlayerStatus, Animation<TextureRegion>> animationMap;
+    private HashMap<PlayerStatus, Rectangle> boundaryMap;
+
+    private PlayerStatus playerStatus;
     private Sound killedSound;
     private Sound jumpSound;
-    private Sound fallSound;
 
-    private boolean isAlive;
-    private Vector2 position;
-    private float previousBottom;
-    private Vector2 acceleration;
+    public boolean isAlive;
 
 
     public Vector2 lanternTop, lanternBottom, lanternFront;
     private BaseActor sensorTop, sensorBottom, sensorFront;
     private BaseActor sensorTest;
+
 
     private float movement;
     private boolean isJumping;
@@ -48,7 +44,9 @@ public class Player extends BaseActor implements ControllerListener {
     private static final float gravityAcceleration = 1500f;
     private static final float maxFallSpeed = 550f;
     private static final float groundDragFactor = 0.48f;
+    private static final float airDragFactor = 0.58f;
     private static final float jumpVelocity = 650f;
+
 
 
     // Shaders
@@ -60,17 +58,15 @@ public class Player extends BaseActor implements ControllerListener {
 
     public Player( Vector2 position, Stage s) {
         super(position.x, position.y, s);
+        playerStatus = PlayerStatus.Idling;
         actorType = ActorType.Player;
         lanternBottom = new Vector2(0,0);
         lanternTop = new Vector2(0,0);
         lanternFront = new Vector2(0,0);
         loadContent();
-        setAnimation(idleAnimation);
+        setAnimation(animationMap.get(playerStatus));
         movement = 0.0f;
         isJumping = false;
-        Controllers.clearListeners();
-        Controllers.addListener(this);
-
         sensorTop = new BaseActor(0,0,s);
         sensorTop.loadTexture("Sprites/White.png");
         sensorTop.setSize(localBounds.width, Tile.height/2);
@@ -89,7 +85,7 @@ public class Player extends BaseActor implements ControllerListener {
         sensorTest.loadTexture("Sprites/White.png");
         sensorTest.setSize(450, 10);
         sensorTest.setBoundaryRectangle();
-        sensorTest.setVisible(false);
+        sensorTest.setVisible(true);
         sensorTest.setColor(Color.GREEN);
 
 
@@ -100,10 +96,12 @@ public class Player extends BaseActor implements ControllerListener {
         if(!shaderProgram.isCompiled()){
             System.out.printf("Shader compile error: %s\n", shaderProgram.getLog());
         }
+
+       // addActor(sensorTest);
+        isAlive = true;
     }
 
     public void reset(Vector2 position){
-        this.position = position;
         velocityVec = Vector2.Zero;
         isAlive = true;
     }
@@ -111,7 +109,12 @@ public class Player extends BaseActor implements ControllerListener {
     @Override
     public void act(float dt) {
         super.act(dt);
+
         time += dt;
+        if(!isAlive){
+            setScaleX(1);
+            return;
+        }
         /**
          * 1. 获取当前Player的状态，位置信息
          * 2. 更新各个方向灯笼探针的信息
@@ -132,34 +135,31 @@ public class Player extends BaseActor implements ControllerListener {
         sensorFront.setPosition(lanternFront.x, getY());
         sensorTest.setPosition(lanternFront.x, lanternFront.y);
 
-
-
         /*
         1. 处理连续输入
          */
         getInput();
-
-
         float speedX = movement * moveAcceleration * dt;
         float speedY = -gravityAcceleration * dt;
         velocityVec.add( speedX, speedY);
 
-        velocityVec.x *= groundDragFactor;
+        if(onSolid(lanternBottom)){
+            if(velocityVec.x == 0){
+                playerStatus = PlayerStatus.Idling;
+            } else {
+                playerStatus = PlayerStatus.Running;
+                velocityVec.x *= groundDragFactor;
+            }
+        } else {
+            playerStatus = PlayerStatus.Jumping;
+            velocityVec.x *= airDragFactor;
+        }
+
         velocityVec.x = MathUtils.round(MathUtils.clamp(velocityVec.x, -maxMoveSpeed, maxMoveSpeed));
         velocityVec.y = MathUtils.round(MathUtils.clamp(velocityVec.y, -maxMoveSpeed, maxMoveSpeed));
 
-
         moveBy(velocityVec.x * dt, velocityVec.y * dt);
-
-        if(onSolid(lanternBottom)){
-            if(velocityVec.x == 0){
-                setAnimation(idleAnimation);
-            } else {
-                setAnimation(runAnimation);
-            }
-        } else {
-            setAnimation(jumpAnimation);
-        }
+        setAnimation(animationMap.get(playerStatus));
 
 
         if(velocityVec.x < 0){
@@ -210,24 +210,41 @@ public class Player extends BaseActor implements ControllerListener {
         jumpSound.play();
     }
 
-    @Override
-    public boolean buttonDown(Controller controller, int buttonCode) {
-        if(controller.getButton(controller.getMapping().buttonA)){
-            if(onSolid(lanternBottom) ){
-                jump();
-            }
-        }
-        return false;
+
+
+    public void killed(){
+        isAlive = false;
+        playerStatus = PlayerStatus.Dying;
+        killedSound.play();
+        setAnimation(animationMap.get(playerStatus));
     }
 
     private void loadContent(){
-        runAnimation = loadAnimationFromAssetManager("Sprites/Player/Run.png",1,10,0.06f,true,false);
-        idleAnimation = loadAnimationFromAssetManager("Sprites/Player/Idle.png",1,1,1f,true,false);
-        jumpAnimation = loadAnimationFromAssetManager("Sprites/Player/Jump.png",1,11,0.1f,true,false);
-        celebrateAnimation = loadAnimationFromAssetManager("Sprites/Player/Celebrate.png",1,11,0.1f,false,false);
-        dieAnimation = loadAnimationFromAssetManager("Sprites/Player/Die.png",1,12,0.1f,false,false);
+
+        if(animationMap == null){
+            animationMap = new HashMap<>();
+        }
+
+        if(boundaryMap == null){
+            boundaryMap = new HashMap<>();
+        }
+        animationMap.put(PlayerStatus.Running, loadAnimationFromAssetManager("Sprites/Player/Run.png",1,10,0.06f,true,false));
+        boundaryMap.put(PlayerStatus.Running, new Rectangle(0,0,32, 64*0.8f));
+
+        animationMap.put(PlayerStatus.Idling, loadAnimationFromAssetManager("Sprites/Player/Idle.png",1,1,1f,true,false));
+        boundaryMap.put(PlayerStatus.Idling, new Rectangle(0,0,28, 64*0.8f));
+
+        animationMap.put(PlayerStatus.Jumping, loadAnimationFromAssetManager("Sprites/Player/Jump.png",1,11,0.1f,true,false));
+        boundaryMap.put(PlayerStatus.Jumping, new Rectangle(0,0,32, 60));
+
+        animationMap.put(PlayerStatus.Celebrating, loadAnimationFromAssetManager("Sprites/Player/Celebrate.png",1,11,0.1f,false,false));
+        boundaryMap.put(PlayerStatus.Celebrating, new Rectangle(0,0,32, 60));
+
+        animationMap.put(PlayerStatus.Dying, loadAnimationFromAssetManager("Sprites/Player/Die.png",1,12,0.1f,false,false));
+        boundaryMap.put(PlayerStatus.Dying, new Rectangle(0,0,32, 60));
 
         jumpSound = getAssetManager().get("Sounds/PlayerJump.wav", Sound.class);
+        killedSound = getAssetManager().get("Sounds/PlayerKilled.wav", Sound.class);
 
 
 
@@ -240,26 +257,6 @@ public class Player extends BaseActor implements ControllerListener {
         setBoundaryRectangle(boundWidth, boundHeight);
     }
 
-    @Override
-    public void connected(Controller controller) {
-
-    }
-
-    @Override
-    public void disconnected(Controller controller) {
-
-    }
-
- 
-    @Override
-    public boolean buttonUp(Controller controller, int buttonCode) {
-        return false;
-    }
-
-    @Override
-    public boolean axisMoved(Controller controller, int axisCode, float value) {
-        return false;
-    }
 
     @Override
     public void draw(Batch batch, float parentAlpha) {
@@ -270,4 +267,13 @@ public class Player extends BaseActor implements ControllerListener {
         super.draw(batch, parentAlpha);
 //        batch.setShader(null);
     }
+
+    public Rectangle getBoundaryRectangle(){
+        Rectangle rec = boundaryMap.get(playerStatus);
+        rec.x =  getX() + getWidth()/4;
+        rec.y =  getY();
+        return  rec;
+    }
+
+
 }

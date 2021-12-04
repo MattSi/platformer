@@ -220,8 +220,7 @@ public class BaseActor extends Group
         return anim;
     }
 
-    public Animation<TextureRegion> loadAnimationFromAssetManager(String fileName, int rows, int cols, float frameDuration,
-                                                                  boolean loop, boolean setAnimate){
+    public Animation<TextureRegion> loadAnimationFromAssetManager(String fileName, int rows, int cols, float frameDuration, boolean loop, boolean setAnimate){
         Texture texture = getAssetManager().get(fileName, Texture.class);
         texture.setFilter(TextureFilter.Linear, TextureFilter.Linear);
         int frameWidth = texture.getWidth() / cols;

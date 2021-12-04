@@ -1,5 +1,6 @@
 package org.propig.game.platformer;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -17,11 +18,12 @@ public class Enemy extends BaseActor {
     private static final float moveSpeed = 64.0f;
     private Rectangle localBounds;
     private float waitTime;
+    private BaseActor sensorTest;
 
     public Rectangle getBoundingRectagle(){
 
-        int left = (int) (MathUtils.round(getX() - getOriginX()) + localBounds.x);
-        int bottom =  (int) (MathUtils.round(getY() - getOriginY()));
+        float left = MathUtils.round(getX() ) + getWidth()/3;
+        float bottom =  MathUtils.round(getY());
 
         return new Rectangle(left, bottom, localBounds.width, localBounds.height);
     }
@@ -35,12 +37,24 @@ public class Enemy extends BaseActor {
 
         animation=runAnimation;
         setAnimation(runAnimation);
+
+
+        sensorTest = new BaseActor(0,0,s);
+        sensorTest.loadTexture("Sprites/White.png");
+        sensorTest.setBoundaryRectangle();
+        sensorTest.setVisible(true);
+        sensorTest.setSize(localBounds.width, localBounds.height);
+        sensorTest.setColor(Color.GREEN);
+
+        addActor(sensorTest);
     }
 
     @Override
     public void act(float dt) {
         super.act(dt);
         Vector2 lantern;
+
+        sensorTest.setPosition(getX() + localBounds.x, getY() );
 
         if(waitTime > 0){
             waitTime = Math.max(0.0f, waitTime-dt);

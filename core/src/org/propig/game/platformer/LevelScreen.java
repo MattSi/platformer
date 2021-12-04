@@ -3,7 +3,12 @@ package org.propig.game.platformer;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.controllers.Controller;
+import com.badlogic.gdx.controllers.ControllerListener;
+import com.badlogic.gdx.controllers.Controllers;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
@@ -12,14 +17,17 @@ import java.util.List;
 import java.util.Random;
 
 
-public class LevelScreen extends BaseScreen{
+public class LevelScreen extends BaseScreen implements ControllerListener {
 
     Player player;
+    Dialog dialog;
     Enemy enemy;
     List<Gem> gems;
     int levelIndex;
     int numberOfLevels;
     Music bgm;
+    Sound sndCollect;
+    Sound sndDie;
     private Tile[][] tiles;
     private static int levelWidth;
     private static int levelHeight;
@@ -28,6 +36,8 @@ public class LevelScreen extends BaseScreen{
 
     public LevelScreen(PlatformerGame game) {
         super(game);
+        Controllers.clearListeners();
+        Controllers.addListener(this);
     }
 
     @Override
@@ -42,6 +52,10 @@ public class LevelScreen extends BaseScreen{
         bgm.setLooping(true);
         bgm.setVolume(0.8f);
         bgm.play();
+
+        sndCollect = game.assetManager.get("Sounds/GemCollected.wav", Sound.class);
+        sndDie = game.assetManager.get("Sounds/PlayerKilled.wav", Sound.class);
+
 
     }
 
@@ -85,7 +99,23 @@ public class LevelScreen extends BaseScreen{
 
         for(BaseActor a : BaseActor.getList(mainStage, ActorType.Gem)){
             Gem gem = (Gem)a;
-            //player.getBoundaryPolygon()
+            Rectangle rec = player.getBoundaryRectangle();
+            if(Intersector.overlaps(gem.getBoundingCircle(), rec)){
+                gem.remove();
+                sndCollect.play();
+            }
+        }
+
+
+        for(BaseActor a : BaseActor.getList(mainStage, ActorType.Enemy)){
+            Enemy enemyItem = (Enemy) a;
+            if(player.isAlive &&
+                    Intersector.overlaps(enemyItem.getBoundingRectagle(), player.getBoundaryRectangle())){
+                player.killed();
+                dialog.setVisible(true);
+                dialog.setPosition(200,200);
+                dialog.setGameStatus(Dialog.GameStatus.PlayerDied);
+            }
         }
     }
 
@@ -122,7 +152,6 @@ public class LevelScreen extends BaseScreen{
 
     public void loadLevel() {
         mainStage.clear();
-
         FileHandle handle = Gdx.files.internal("Levels/" + levelIndex + ".txt");
         String data = handle.readString();
         String[] wordArray = data.split("\\r?\\n");
@@ -133,6 +162,7 @@ public class LevelScreen extends BaseScreen{
         BaseActor.setWorldBounds(levelWidth * Tile.width, levelHeight * Tile.height);
         new Background(0, 0, mainStage, 3);
         player = new Player(new Vector2(playerX, playerY), null);
+        dialog = new Dialog(0,0,null);
         enemy = null;
         for (Gem item : gems) {
             item.dispose();
@@ -146,8 +176,10 @@ public class LevelScreen extends BaseScreen{
             }
         }
 
-        mainStage.addActor(enemy);
+        if(enemy != null)
+            mainStage.addActor(enemy);
         mainStage.addActor(player);
+        mainStage.addActor(dialog);
     }
 
     private Tile loadEnemyTile(int x, int y, String spriteSet){
@@ -228,4 +260,37 @@ public class LevelScreen extends BaseScreen{
                 throw new RuntimeException("Unsupported tile type character");
         }
     }
+
+
+    @Override
+    public void connected(Controller controller) {
+
+    }
+
+    @Override
+    public void disconnected(Controller controller) {
+
+    }
+
+
+    @Override
+    public boolean buttonUp(Controller controller, int buttonCode) {
+        return false;
+    }
+
+    @Override
+    public boolean axisMoved(Controller controller, int axisCode, float value) {
+        return false;
+    }
+
+    @Override
+    public boolean buttonDown(Controller controller, int buttonCode) {
+        if(controller.getButton(controller.getMapping().buttonA)){
+            if(player.onSolid(player.lanternBottom) ){
+                player.jump();
+            }
+        }
+        return false;
+    }
+
 }

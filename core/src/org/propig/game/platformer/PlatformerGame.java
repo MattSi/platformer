@@ -20,7 +20,6 @@ public class PlatformerGame extends BaseGame implements ControllerListener {
         setActiveScreen(new LevelScreen(this));
     }
 
-
     @Override
     public void connected(Controller controller) {
         this.controller = controller;

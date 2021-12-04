@@ -14,7 +14,7 @@ public class Background extends BaseActor{
     public Background(float x, float y, Stage s, int numberOfLevels) {
         super(x, y, s);
         // 下一关
-        levelIndex = (levelIndex + 1) % numberOfLevels;
+
         actorType = ActorType.Background;
 
         for(int i=0; i<numberOfLevels; i++){
@@ -23,6 +23,8 @@ public class Background extends BaseActor{
             bg.loadAnimationFromAssetManager("Backgrounds/Layer" + i + "_" + segmentIndex + ".png",1, 1, 1, false, true);
             addActor(bg);
         }
+
+        levelIndex = (levelIndex + 1) % numberOfLevels;
     }
 
 }
