@@ -23,6 +23,7 @@ public class Dialog extends BaseActor{
         animationHashMap.put(GameStatus.PlayerDied,     loadAnimationFromAssetManager("Overlays/you_died.png",1,1,1f,false,false));
         animationHashMap.put(GameStatus.PlayerLose,     loadAnimationFromAssetManager("Overlays/you_lose.png",1,1,1f,false,false));
         animationHashMap.put(GameStatus.PlayerSuccess,  loadAnimationFromAssetManager("Overlays/you_win.png",1,1,1f,false,false));
+        setPosition(getWorldBounds().width/2 - 358/2, getWorldBounds().height/2 - 180/2);
         setVisible(false);
     }
 

@@ -8,9 +8,12 @@ import com.badlogic.gdx.controllers.Controller;
 import com.badlogic.gdx.controllers.ControllerListener;
 import com.badlogic.gdx.controllers.Controllers;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Intersector;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,10 +31,17 @@ public class LevelScreen extends BaseScreen implements ControllerListener {
     Music bgm;
     Sound sndCollect;
     Sound sndDie;
+    ExitSign exitSign;
+    Label timeLabel;
+    Label scoreLabel;
     private Tile[][] tiles;
     private static int levelWidth;
     private static int levelHeight;
     private Random random;
+    private float timeRemaining;
+    private float warningSeconds;
+    private int score;
+
     private float playerX, playerY;
 
     public LevelScreen(PlatformerGame game) {
@@ -42,6 +52,8 @@ public class LevelScreen extends BaseScreen implements ControllerListener {
 
     @Override
     public void initialize() {
+        warningSeconds=10;
+        score = 0;
         game.assetManager.finishLoading();
         gems = new ArrayList<>();
         levelIndex = -1;
@@ -51,16 +63,28 @@ public class LevelScreen extends BaseScreen implements ControllerListener {
         bgm = game.assetManager.get("Sounds/Music.mp3", Music.class);
         bgm.setLooping(true);
         bgm.setVolume(0.8f);
-        bgm.play();
+        //bgm.play();
 
         sndCollect = game.assetManager.get("Sounds/GemCollected.wav", Sound.class);
         sndDie = game.assetManager.get("Sounds/PlayerKilled.wav", Sound.class);
 
+        timeLabel = new Label(" ", BaseGame.labelStyle);
+        timeLabel.setColor(Color.YELLOW);
+        scoreLabel = new Label("SCORE: 0", BaseGame.labelStyle);
+        scoreLabel.setColor(Color.YELLOW);
+
+        uiTable.left().top();
+        uiTable.add(timeLabel).padLeft(10).width(50);
+        uiTable.row();
+        uiTable.add(scoreLabel).padLeft(10).width(50);
 
     }
 
     @Override
     public void update(float dt) {
+        timeLabel.setText("TIME: " + MathUtils.round(timeRemaining));
+        scoreLabel.setText("SCORE: " + score);
+
         Rectangle r = new Rectangle(0, 0, 0, 0);
         for (BaseActor a : BaseActor.getList(mainStage, ActorType.Solid)) {
             r.set(a.getX(), a.getY(), a.getWidth(), a.getHeight());
@@ -81,7 +105,6 @@ public class LevelScreen extends BaseScreen implements ControllerListener {
                     player.setX(a.getX() - player.getWidth() * 0.7f);
                 }
                 player.velocityVec.x = 0;
-
             }
         }
 
@@ -92,15 +115,16 @@ public class LevelScreen extends BaseScreen implements ControllerListener {
                 player.setY(a.getY() + a.getHeight());
             }
 
-            if(r.contains(player.lanternFront)){
-                player.velocityVec.x = 0;
-            }
+//            if(r.contains(player.lanternFront)){
+//                player.velocityVec.x = 0;
+//            }
         }
 
         for(BaseActor a : BaseActor.getList(mainStage, ActorType.Gem)){
             Gem gem = (Gem)a;
             Rectangle rec = player.getBoundaryRectangle();
             if(Intersector.overlaps(gem.getBoundingCircle(), rec)){
+                score += 30;
                 gem.remove();
                 sndCollect.play();
             }
@@ -113,10 +137,34 @@ public class LevelScreen extends BaseScreen implements ControllerListener {
                     Intersector.overlaps(enemyItem.getBoundingRectagle(), player.getBoundaryRectangle())){
                 player.killed();
                 dialog.setVisible(true);
-                dialog.setPosition(200,200);
                 dialog.setGameStatus(Dialog.GameStatus.PlayerDied);
             }
         }
+
+        r.set(exitSign.getX() + 5, exitSign.getY(), 32, 32);
+        if(player.isAlive &&
+                Intersector.overlaps(r, player.getBoundaryRectangle())){
+            player.succeed();
+            dialog.setVisible(true);
+            dialog.setGameStatus(Dialog.GameStatus.PlayerSuccess);
+        }
+
+        timeRemaining -= dt;
+        if(timeRemaining <= 0f){
+            timeRemaining = 0;
+            dialog.setVisible(true);
+            dialog.setGameStatus(Dialog.GameStatus.PlayerLose);
+            player.lose();
+        }
+
+        if(timeRemaining < warningSeconds ) {
+            if (MathUtils.round(timeRemaining) % 2 == 0){
+                timeLabel.setColor(Color.RED);
+            } else {
+                timeLabel.setColor(Color.YELLOW);
+            }
+        }
+
     }
 
     @Override
@@ -125,6 +173,11 @@ public class LevelScreen extends BaseScreen implements ControllerListener {
     }
 
 
+
+    private void loadCurrentLevel(){
+        levelIndex = (levelIndex - 1)%numberOfLevels;
+        loadNextLevel();
+    }
 
     private void loadNextLevel(){
         // 下一关
@@ -152,6 +205,8 @@ public class LevelScreen extends BaseScreen implements ControllerListener {
 
     public void loadLevel() {
         mainStage.clear();
+        timeRemaining = 60;
+        warningSeconds = 10;
         FileHandle handle = Gdx.files.internal("Levels/" + levelIndex + ".txt");
         String data = handle.readString();
         String[] wordArray = data.split("\\r?\\n");
@@ -176,8 +231,9 @@ public class LevelScreen extends BaseScreen implements ControllerListener {
             }
         }
 
-        if(enemy != null)
+        if(enemy != null) {
             mainStage.addActor(enemy);
+        }
         mainStage.addActor(player);
         mainStage.addActor(dialog);
     }
@@ -190,7 +246,7 @@ public class LevelScreen extends BaseScreen implements ControllerListener {
 
     private Tile loadExitTile(int x, int y){
         Rectangle bound = getBounds(x, y);
-        new ExitSign(bound.x, bound.y, mainStage);
+        exitSign = new ExitSign(bound.x, bound.y, mainStage);
         return new Tile( Tile.TileCollision.Passable);
     }
 
@@ -286,11 +342,18 @@ public class LevelScreen extends BaseScreen implements ControllerListener {
     @Override
     public boolean buttonDown(Controller controller, int buttonCode) {
         if(controller.getButton(controller.getMapping().buttonA)){
-            if(player.onSolid(player.lanternBottom) ){
-                player.jump();
+            if(!player.isAlive){
+                if(dialog.gameStatus == Dialog.GameStatus.PlayerLose || dialog.gameStatus == Dialog.GameStatus.PlayerDied){
+                    loadCurrentLevel();
+                } else {
+                    loadNextLevel();
+                }
+            } else {
+                if(player.onSolid(player.lanternBottom) && player.velocityVec.y==0f ){
+                    player.jump();
+                }
             }
         }
         return false;
     }
-
 }

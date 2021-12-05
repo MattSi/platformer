@@ -27,6 +27,7 @@ public class Player extends BaseActor {
     private PlayerStatus playerStatus;
     private Sound killedSound;
     private Sound jumpSound;
+    private Sound celebrateSound;
 
     public boolean isAlive;
 
@@ -111,10 +112,7 @@ public class Player extends BaseActor {
         super.act(dt);
 
         time += dt;
-        if(!isAlive){
-            setScaleX(1);
-            return;
-        }
+
         /**
          * 1. 获取当前Player的状态，位置信息
          * 2. 更新各个方向灯笼探针的信息
@@ -135,7 +133,16 @@ public class Player extends BaseActor {
         sensorFront.setPosition(lanternFront.x, getY());
         sensorTest.setPosition(lanternFront.x, lanternFront.y);
 
-        /*
+
+        if(isAlive){
+            actAlive(dt);
+        } else {
+            actNotAlive(dt);
+        }
+    }
+
+    private void actAlive(float dt){
+            /*
         1. 处理连续输入
          */
         getInput();
@@ -161,7 +168,6 @@ public class Player extends BaseActor {
         moveBy(velocityVec.x * dt, velocityVec.y * dt);
         setAnimation(animationMap.get(playerStatus));
 
-
         if(velocityVec.x < 0){
             direction = FaceDirection.Left;
             setScaleX(1);
@@ -175,7 +181,35 @@ public class Player extends BaseActor {
         isJumping = false;
 
     }
+    private void actNotAlive(float dt){
+        float speedX = movement * moveAcceleration * dt;
+        float speedY = -gravityAcceleration * dt;
+        velocityVec.add( speedX, speedY);
 
+        if(onSolid(lanternBottom)){
+            velocityVec.x *= groundDragFactor;
+        } else {
+            velocityVec.x *= airDragFactor;
+        }
+
+        velocityVec.x = MathUtils.round(MathUtils.clamp(velocityVec.x, -maxMoveSpeed, maxMoveSpeed));
+        velocityVec.y = MathUtils.round(MathUtils.clamp(velocityVec.y, -maxMoveSpeed, maxMoveSpeed));
+
+        moveBy(velocityVec.x * dt, velocityVec.y * dt);
+        setAnimation(animationMap.get(playerStatus));
+
+        if(velocityVec.x < 0){
+            direction = FaceDirection.Left;
+            setScaleX(1);
+        } else {
+            setScaleX(-1);
+            direction = FaceDirection.Right;
+        }
+
+        boundToWorld();
+        movement = 0.0f;
+        isJumping = false;
+    }
     private void getInput() {
         Controller controller = getController();
         if (controller != null) {
@@ -216,7 +250,20 @@ public class Player extends BaseActor {
         isAlive = false;
         playerStatus = PlayerStatus.Dying;
         killedSound.play();
-        setAnimation(animationMap.get(playerStatus));
+        //setAnimation(animationMap.get(playerStatus));
+    }
+
+    public void lose(){
+        isAlive = false;
+        playerStatus = PlayerStatus.Idling;
+    }
+
+    public void succeed(){
+        isAlive = false;
+        playerStatus = PlayerStatus.Celebrating;
+        celebrateSound.play();
+        //setAnimation(animationMap.get(playerStatus));
+
     }
 
     private void loadContent(){
@@ -237,7 +284,7 @@ public class Player extends BaseActor {
         animationMap.put(PlayerStatus.Jumping, loadAnimationFromAssetManager("Sprites/Player/Jump.png",1,11,0.1f,true,false));
         boundaryMap.put(PlayerStatus.Jumping, new Rectangle(0,0,32, 60));
 
-        animationMap.put(PlayerStatus.Celebrating, loadAnimationFromAssetManager("Sprites/Player/Celebrate.png",1,11,0.1f,false,false));
+        animationMap.put(PlayerStatus.Celebrating, loadAnimationFromAssetManager("Sprites/Player/Celebrate.png",1,11,0.15f,true,false));
         boundaryMap.put(PlayerStatus.Celebrating, new Rectangle(0,0,32, 60));
 
         animationMap.put(PlayerStatus.Dying, loadAnimationFromAssetManager("Sprites/Player/Die.png",1,12,0.1f,false,false));
@@ -245,7 +292,7 @@ public class Player extends BaseActor {
 
         jumpSound = getAssetManager().get("Sounds/PlayerJump.wav", Sound.class);
         killedSound = getAssetManager().get("Sounds/PlayerKilled.wav", Sound.class);
-
+        celebrateSound = getAssetManager().get("Sounds/ExitReached.wav", Sound.class);
 
 
         Texture idle = getAssetManager().get("Sprites/Player/Idle.png", Texture.class);

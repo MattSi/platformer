@@ -28,10 +28,12 @@ public abstract class BaseScreen implements Screen, InputProcessor
         mainStage = new Stage(viewport, game.batch);
         uiStage = new Stage(viewport, game.batch);
 
+
         uiTable = new Table();
         uiTable.setFillParent(true);
         uiStage.addActor(uiTable);
 
+        //mainStage.setDebugAll(true);
         initialize();
     }
 
@@ -43,18 +45,16 @@ public abstract class BaseScreen implements Screen, InputProcessor
     // (1) process input (discrete handled by listener; continuous in update)
     // (2) update game logic
     // (3) render the graphics
-    public void render(float dt) 
-    {
+    public void render(float dt) {
         // limit amount of time that can pass while window is being dragged
-        dt = Math.min(dt,1/30f);
-        
+        dt = Math.min(dt, 1 / 30f);
+
         // act methods
         uiStage.act(dt);
         mainStage.act(dt);
 
         // defined by user
         update(dt);
-
 
 
         // draw the graphics

@@ -35,7 +35,7 @@ public abstract class BaseGame extends Game {
     /**
      * Called when game is initialized
      */
-    public BaseGame(){
+    public BaseGame() {
         game = this;
         assetManager = new AssetManager();
     }
@@ -48,42 +48,17 @@ public abstract class BaseGame extends Game {
         Gdx.input.setInputProcessor(im);
 
         loadAsset(assetManager);
-//
-//        // parameters for generating a custom bitmap font
-//        FreeTypeFontGenerator fontGenerator = new FreeTypeFontGenerator(Gdx.files.internal("spacewar/OpenSans.ttf"));
-//        //fontGenerator = new FreeTypeFontGenerator()
-//        FreeTypeFontGenerator.FreeTypeFontParameter fontParameter =
-//                new FreeTypeFontGenerator.FreeTypeFontParameter();
-//        fontParameter.size = 12;
-//        fontParameter.color = Color.WHITE;
-//
-//        // TODO: fix font and Style;
-//        BitmapFont custFont = new BitmapFont(Gdx.files.internal("spacewar/spacewar.fnt"),
-//                Gdx.files.internal("spacewar/spacewar.png"),false);
-//
-//
-//        Texture buttonTex = new Texture(Gdx.files.internal("spacewar/button.png"));
-//        NinePatch buttonPatch =new NinePatch(buttonTex, 24, 24, 24, 24);
-//
-//        textButtonStyle = new TextButton.TextButtonStyle();
-//        textButtonStyle.up = new NinePatchDrawable(buttonPatch);
-//        textButtonStyle.font = custFont;
-//
-//        labelStyle = new Label.LabelStyle();
-//        labelStyle.font = custFont;
-//
-//        debugLabelStyle = new Label.LabelStyle();
-//        debugLabelStyle.font = fontGenerator.generateFont(fontParameter);
 
+        labelStyle = new Label.LabelStyle();
+        labelStyle.font = assetManager.get("Fonts/arialbd.ttf", BitmapFont.class);
 
     }
 
-    public static void setActiveScreen(BaseScreen s)
-    {
+    public static void setActiveScreen(BaseScreen s) {
         game.setScreen(s);
     }
 
-    private void loadAsset(AssetManager assetManager){
+    private void loadAsset(AssetManager assetManager) {
         assetManager.load("Backgrounds/Layer0_0.png", Texture.class);
         assetManager.load("Backgrounds/Layer0_1.png", Texture.class);
         assetManager.load("Backgrounds/Layer0_2.png", Texture.class);
@@ -143,12 +118,12 @@ public abstract class BaseGame extends Game {
 
 
         FreeTypeFontLoaderParameter stdFont = new FreeTypeFontLoaderParameter();
-        stdFont.fontFileName="Fonts/arialbd.ttf";
-        stdFont.fontParameters.size=14;
-        stdFont.fontParameters.spaceX=0;
-        stdFont.fontParameters.spaceY=0;
-        stdFont.fontParameters.kerning=true;
-        assetManager.load("Fonts/arialbd.ttf",BitmapFont.class, stdFont);
+        stdFont.fontFileName = "Fonts/arialbd.ttf";
+        stdFont.fontParameters.size = 20;
+        stdFont.fontParameters.spaceX = 0;
+        stdFont.fontParameters.spaceY = 0;
+        stdFont.fontParameters.kerning = true;
+        assetManager.load("Fonts/arialbd.ttf", BitmapFont.class, stdFont);
 
         assetManager.finishLoading();
     }
