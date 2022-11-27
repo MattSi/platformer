@@ -63,7 +63,7 @@ public class LevelScreen extends BaseScreen implements ControllerListener {
         bgm = game.assetManager.get("Sounds/Music.mp3", Music.class);
         bgm.setLooping(true);
         bgm.setVolume(0.8f);
-        //bgm.play();
+        bgm.play();
 
         sndCollect = game.assetManager.get("Sounds/GemCollected.wav", Sound.class);
         sndDie = game.assetManager.get("Sounds/PlayerKilled.wav", Sound.class);
